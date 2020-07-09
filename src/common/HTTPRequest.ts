@@ -30,7 +30,7 @@ export interface ContinueRequestOverrides {
   url?: string;
   method?: string;
   postData?: string;
-  headers?: Record<string, string>;
+  headers?: Record<string, string | string[]>;
 }
 
 /**
@@ -40,7 +40,7 @@ export interface ContinueRequestOverrides {
  */
 export interface ResponseForRequest {
   status: number;
-  headers: Record<string, string>;
+  headers: Record<string, string | string[]>;
   contentType: string;
   body: string | Buffer;
 }
@@ -355,7 +355,7 @@ export class HTTPRequest {
         ? Buffer.from(response.body)
         : (response.body as Buffer) || null;
 
-    const responseHeaders: Record<string, string> = {};
+    const responseHeaders: Record<string, string | string[]> = {};
     if (response.headers) {
       for (const header of Object.keys(response.headers))
         responseHeaders[header.toLowerCase()] = response.headers[header];
@@ -452,12 +452,19 @@ const errorReasons: Record<ErrorCode, Protocol.Network.ErrorReason> = {
 } as const;
 
 function headersArray(
-  headers: Record<string, string>
+  headers: Record<string, string | string[]>
 ): Array<{ name: string; value: string }> {
   const result = [];
   for (const name in headers) {
-    if (!Object.is(headers[name], undefined))
-      result.push({ name, value: headers[name] + '' });
+    if (!Object.is(headers[name], undefined)) {
+      if (Array.isArray(headers[name])) {
+        for (const value of headers[name]) {
+          result.push({ name, value: value + '' });
+        }
+      } else {
+        result.push({ name, value: headers[name] + '' });
+      }
+    }
   }
   return result;
 }
